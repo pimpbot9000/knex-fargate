@@ -1,38 +1,43 @@
 import { useEffect, useState } from 'react'
 import personService from './services/persons'
+import poliisi from './images/poliisi.png'
 
 const App = () => {
 
   const [persons, setPersons] = useState([])
 
-
   useEffect(() => {
-
     personService.getAll().then(persons => {
       console.log(persons)
       setPersons(persons)
     })
-
   }, [])
 
-  const addPerson = (person) => {
+  const addPerson = async (person) => {
     console.log("addperson", person)
-    personService.createNew(person).then(person => {
-      console.log("created", person)
-      setPersons(persons.concat(person))
-    })
+    const createdPerson = await personService.createNew(person)
+    setPersons(persons.concat(createdPerson))
   }
-
-  const rows = persons.map(person =>
-    <p key={person.id}>{person.email}</p>
-  )
 
   return (
     <>
+      <img src={poliisi} alt={"poliisi"} />
+      <h1>Salainen mustalaisrekisteri</h1>
       <NewPerson addPerson={addPerson} />
+      <PersonList persons={persons} />
+    </>
+  )
+}
+const PersonList = ({ persons }) => {
+  const rows = persons.map(person =>
+    <p key={person.id}>{person.firstName} {person.lastName}, {person.email}</p>
+  )
+
+  return (
+    <div>
       <h1>List of persons</h1>
       <div> {rows} </div>
-    </>
+    </div>
   )
 }
 
@@ -42,27 +47,32 @@ const NewPerson = ({ addPerson }) => {
   const lastName = useField('text')
   const email = useField('text')
 
-  const onSubmit = (evt) => {
+  const onSubmit = async (evt) => {
     evt.preventDefault()
-    addPerson({
-      firstName: firstName.value,
-      lastName: lastName.value,
-      email: email.value
+
+    await addPerson({
+      firstName: firstName.props.value,
+      lastName: lastName.props.value,
+      email: email.props.value
     })
+
+    firstName.clear()
+    lastName.clear()
+    email.clear()
   }
 
   return (
     <form onSubmit={onSubmit}>
-      firstname:<br />
-      <input {...firstName} />
+      Firstname:<br />
+      <input {...firstName.props} />
       <br />
-      lastname:<br />
-      <input {...lastName} />
+      Lastname:<br />
+      <input {...lastName.props} />
       <br />
-      email:<br />
-      <input {...email} />
+      Email:<br />
+      <input {...email.props} />
       <br />
-      <button type="submit">login</button>
+      <button type="submit">Submit</button>
     </form>
   )
 }
@@ -71,11 +81,15 @@ const useField = (type) => {
   const [value, setValue] = useState('')
 
   const onChange = (event) => setValue(event.target.value)
+  const clear = () => setValue('')
 
   return {
-    type,
-    value,
-    onChange
+    props: {
+      type,
+      value,
+      onChange
+    },
+    clear
   }
 }
 
